@@ -1,0 +1,9 @@
+# 실험 행렬 (문서 1.7절): 크기 3종 x 입력 크기 2종. train_s640.yaml 위에 덮어쓴다.
+base: train_s640.yaml
+experiments:
+  n640:  {model: yolo11n-seg.pt, imgsz: 640,  batch: 64}
+  s640:  {model: yolo11s-seg.pt, imgsz: 640,  batch: 32}
+  m640:  {model: yolo11m-seg.pt, imgsz: 640,  batch: 16}
+  n1280: {model: yolo11n-seg.pt, imgsz: 1280, batch: 16}
+  s1280: {model: yolo11s-seg.pt, imgsz: 1280, batch: 8}
+  m1280: {model: yolo11m-seg.pt, imgsz: 1280, batch: 4}

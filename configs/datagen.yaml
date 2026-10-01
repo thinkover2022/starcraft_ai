@@ -1,0 +1,29 @@
+# 1단계 데이터 생성 설정. 값의 의미는 datagen/common/config.py 참조.
+# "측정 필요" 항목은 시범 데이터(리플레이 20개)로 측정한 뒤 채운다.
+
+mask:
+  upscale: 2
+  margins:                 # 분류별 여유 폭 (왼, 위, 오른, 아래) 픽셀 — 시범 데이터로 조정
+    ground:   [4, 6, 4, 4]
+    air:      [6, 8, 6, 6]
+    building: [8, 32, 8, 8]
+    lifted:   [8, 16, 8, 8]
+    resource: [4, 8, 4, 4]
+  type_margins:            # 종류별 덮어쓰기 예시
+    Terran_Siege_Tank_Siege_Mode: [16, 12, 16, 8]
+  shadow_offset: null      # 측정 필요: 공중 유닛 그림자 = 중심 + (dx, dy)
+  min_visible_fraction: 0.2
+  min_area_px: 12
+  min_score: 0.7
+  area_ratio_range: [0.3, 4.0]
+  max_bad_fraction: 0.3
+  console_mask_png: null   # 측정 필요: 조작판 모양 마스크 PNG (255 = 게임 화면)
+  play_area_bottom: null   # 위 PNG 대신 쓰는 간단한 대안 (이 y 아래는 조작판)
+
+split:
+  val_fraction: 0.1
+  test_fraction: 0.1
+  held_out_maps: []        # 평가 세트 ③: 학습에 안 쓸 맵 3종 이름 (리플레이 걸러낸 뒤 결정)
+  seed: sc-terran-v1
+
+min_instances_per_class: 3000

@@ -1,0 +1,25 @@
+[project]
+name = "starcraft-ai"
+version = "0.1.0"
+description = "화면 인식 기반 스타크래프트: 브루드워 인공지능 — 1단계 객체 인식"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "opencv-python-headless>=4.8",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# 마스크 생성 (우분투 + 그래픽 카드)
+sam = ["torch>=2.3", "sam2"]
+# 객체 인식 모델 학습·평가·변환
+train = ["torch>=2.3", "ultralytics>=8.3"]
+# 윈도우 화면 캡처
+capture = ["dxcam"]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["datagen*", "perception*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

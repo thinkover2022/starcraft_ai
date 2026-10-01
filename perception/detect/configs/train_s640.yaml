@@ -1,0 +1,30 @@
+# 기본 실험 (문서 1.7절 실험 2): 소형 분할 모델, 입력 640
+# 다른 실험은 model / imgsz / batch / name 만 바꾼 파일을 추가한다 (experiments.yaml 참조).
+model: yolo11s-seg.pt          # 공통 객체 문맥 데이터셋(COCO)으로 사전 학습된 가중치
+data: /data/sc_terran_v1/sc_terran.yaml
+project: runs/terran
+name: s640
+
+imgsz: 640
+epochs: 150
+batch: 32
+device: 0
+workers: 8
+patience: 30                   # 검증 성능이 30회 연속 안 오르면 조기 종료
+seed: 0
+
+# ---- 게임 화면에 맞춘 데이터 증강 ----
+hsv_h: 0.0                     # 색조 변경 금지: 팀 색상이 소유자 정보
+hsv_s: 0.0                     # 채도 변경 금지
+hsv_v: 0.15                    # 밝기만 약간 (전장의 안개 대비)
+degrees: 0.0                   # 회전 금지
+shear: 0.0
+perspective: 0.0
+translate: 0.1
+scale: 0.1                     # 게임은 확대·축소가 없으므로 ±10%만
+flipud: 0.0
+fliplr: 0.0                    # 건물은 반전된 모습이 게임에 없음 (2차 실험에서 유닛만 반전 비교)
+mosaic: 1.0
+close_mosaic: 15
+copy_paste: 0.3                # 마스크가 있어 가능한 객체 오려 붙이기 (밀집 장면 대비)
+mixup: 0.0
