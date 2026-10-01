@@ -39,13 +39,13 @@ class TeamPalette:
 
     @classmethod
     def load(cls, path) -> "TeamPalette":
-        d = json.loads(Path(path).read_text())
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls({int(c): set(v) for c, v in d["colors"].items()})
 
     def save(self, path, meta: dict | None = None):
         Path(path).write_text(json.dumps(
             {"colors": {str(c): sorted(s) for c, s in self.colors.items()}, "meta": meta or {}},
-            indent=1))
+            indent=1), encoding="utf-8")
 
     def classify(self, image_rgb: np.ndarray, mask: np.ndarray) -> tuple[int | None, float]:
         """(색상 번호, 신뢰도). 팀 색상 픽셀이 하나도 없으면 (None, 0)."""
@@ -74,7 +74,9 @@ def calibrate(samples, min_purity: float = 0.95, min_count: int = 50,
 
 
 def _samples(raw: Path, ann_dir: Path, limit: int | None = None):
+    from datagen.common.imageio import imread_rgb, index_pngs
     from datagen.sam_masks.pipeline import load_ann
+    pngs = index_pngs(raw)
     n = 0
     for p in sorted(ann_dir.glob("*.json")):
         if p.name.startswith("_"):
@@ -82,10 +84,10 @@ def _samples(raw: Path, ann_dir: Path, limit: int | None = None):
         ann = load_ann(p)
         if ann.frame_rejected or not ann.objects:
             continue
-        hits = list(raw.rglob(f"{ann.stem}.png"))
-        if not hits:
+        png = pngs.get(ann.stem)
+        if png is None:
             continue
-        img = cv2.cvtColor(cv2.imread(str(hits[0])), cv2.COLOR_BGR2RGB)
+        img = imread_rgb(png)
         for o in ann.objects:
             if o.type.startswith("Resource_"):
                 continue

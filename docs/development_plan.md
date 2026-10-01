@@ -118,7 +118,7 @@
 [나] 화면 캡처 프로그램 (윈도우, Python)
       │  같은 프레임의 화면을 무손실 PNG로 저장
       ▼  (원본 화면 PNG + 유닛 목록 JSON 파일 묶음)
-[다] 마스크 생성 프로그램 (리눅스 또는 윈도우, 그래픽 카드, Python + PyTorch)
+[다] 마스크 생성 프로그램 (윈도우, 그래픽 카드, Python + PyTorch)
       │  범용 분할 모델로 유닛별 마스크 생성 → 겹침 정리 → 품질 검사 → 다각형으로 변환
       ▼
 [라] 데이터셋 구성 프로그램 (Python)
@@ -187,7 +187,9 @@ void LabelCollector::onFrame() {
 
 - **모델:** 메타(Meta)의 범용 분할 모델 2.1 대형(`sam2.1-hiera-large`)을 기본으로 씁니다. 더 새로운 버전이 나와 있으면 같은 방식으로 교체합니다.
   사각형 힌트를 주면 그 안의 물체 테두리를 따 주는 기능("박스 프롬프트")을 씁니다.
-- **실행 환경:** 우분투 22.04, RTX 3090, Python 3.11, PyTorch 2.x + CUDA 12.x (CUDA는 엔비디아 그래픽 카드 병렬 계산 플랫폼인 Compute Unified Device Architecture).
+- **실행 환경:** 게임을 돌리는 같은 윈도우 10/11 컴퓨터, RTX 3090, Python 3.11, PyTorch 2.x CUDA 판 (CUDA는 엔비디아 그래픽 카드 병렬 계산 플랫폼인 Compute Unified Device Architecture).
+  범용 분할 모델 2의 선택형 CUDA 확장은 윈도우에서 빌드하지 않습니다(작은 구멍 메우기 후처리용이라 없어도 됨). 설치가 막히면 같은 컴퓨터의 WSL2(윈도우 안의 우분투)에서 이 단계만 돌립니다.
+  게임 캡처가 끝난 뒤에 실행합니다(그래픽 카드를 함께 쓰므로).
 - **처리 순서 (화면 1장마다):**
   1. 640×480 화면을 **2배 확대**(1280×960)합니다. 해병은 화면에서 가로세로 약 16–20픽셀밖에 안 돼서 원본 크기로는 분할 모델이 테두리를 잘 못 땁니다.
   2. 각 유닛의 충돌 사각형을 화면 좌표로 바꿉니다(맵 좌표 − 카메라 위치). 그리고 **종류별 여유 폭**만큼 넓힙니다.
@@ -213,7 +215,7 @@ from sam2.sam2_image_predictor import SAM2ImagePredictor
 predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2.1-hiera-large")
 
 def make_masks(png_path, units, camera, margins, scale=2):
-    img = cv2.cvtColor(cv2.imread(png_path), cv2.COLOR_BGR2RGB)
+    img = imread_rgb(png_path)   # 윈도우 한글 경로에서도 동작하는 읽기 (datagen/common/imageio.py)
     big = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
     boxes = []
     for u in units:
@@ -302,15 +304,15 @@ def make_masks(png_path, units, camera, margins, scale=2):
 
 | 항목 | 내용 |
 |---|---|
-| 하드웨어 | 우분투 22.04 + RTX 3090(24GB). 계획서의 리눅스 학습 서버 |
+| 하드웨어 | 게임·캡처와 같은 윈도우 10/11 컴퓨터 + RTX 3090(24GB). 캡처·마스크 생성·학습은 순서대로 실행 |
 | 소프트웨어 | Python 3.11, PyTorch 2.x(CUDA 12.x), ultralytics, opencv-python, pycocotools |
-| 재현성 | 도커(Docker) 이미지 하나로 고정. 학습 설정 파일, 데이터셋 버전, 코드 커밋 번호를 학습 결과와 함께 저장 |
+| 재현성 | Python 가상환경 패키지 목록을 `pip freeze` 로 고정. 학습 설정 파일, 데이터셋 버전, 코드 커밋 번호를 학습 결과와 함께 저장 |
 | 기록 | 학습 곡선과 지표를 텐서보드(TensorBoard) 또는 MLflow로 기록 |
 
 #### 데이터셋 설정 파일 (`perception/detect/sc_terran.yaml`)
 
 ```yaml
-path: /data/sc_terran_v1
+path: D:/sc_data/sc_terran_v1
 train: images/train
 val: images/val
 test: images/test
@@ -386,7 +388,7 @@ model.export(format="engine", half=True, imgsz=640)
 |---|---|---|---|
 | 1 | 윈도우 환경(1.16.1 + 게임 정보 인터페이스 라이브러리 4.4.0) 구축, 수집 모듈 뼈대 | 리플레이에서 유닛 JSON 기록 | JSON과 게임 화면 육안 대조 |
 | 2 | 캡처 연동, 게임 정지 동기화, 프레임 어긋남 실험 | PNG + JSON 쌍 | 어긋남 값 확정 |
-| 3 | 리눅스에 범용 분할 모델 설치, 마스크 생성기, 종류별 여유 폭 표 | 마스크 겹침 이미지 | 사람이 100장 확인 |
+| 3 | 윈도우에 범용 분할 모델 설치, 마스크 생성기, 종류별 여유 폭 표 | 마스크 겹침 이미지 | 사람이 100장 확인 |
 | 4 | 겹침 정리, 조작판 마스크, 품질 자동 검사, 다각형 변환 | 시범 데이터 1만 장 | 불량률 5% 미만 |
 | 5 | 시범 학습 (소형, 640) | 첫 모델 | 시범 검증 세트 지표 |
 | 6–7 | 리플레이 300개 대량 생산, 평가 세트 ③④ 수집 | 20만 장 + 평가 세트 | 클래스별 개수표 |

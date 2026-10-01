@@ -26,6 +26,7 @@ import yaml
 
 from ..common.classes import class_names
 from ..common.config import load_config
+from ..common.imageio import index_pngs
 from ..sam_masks.pipeline import load_ann
 from ..sam_masks.polygon import polygon_to_yolo
 from .split import assign_split
@@ -74,6 +75,7 @@ def build(raw: Path, ann_dir: Path, out: Path, cfg, gold_dir: Path | None = None
     if gold_dir is not None:
         sources += [(p, "gold") for p in sorted(gold_dir.glob("*.json")) if not p.name.startswith("_")]
 
+    pngs = index_pngs(raw)
     for path, forced in sources:
         ann = load_ann(path)
         if ann.frame_rejected:
@@ -84,13 +86,10 @@ def build(raw: Path, ann_dir: Path, out: Path, cfg, gold_dir: Path | None = None
             report["skipped"]["rejected_objects"] += 1
             continue
         split = forced or assign_split(ann.replay_id, ann.map_name, ann.source, cfg.split)
-        png = raw / f"{ann.stem}.png"
-        if not png.exists():
-            hits = list(raw.rglob(f"{ann.stem}.png"))
-            if not hits:
-                report["skipped"]["missing_png"] += 1
-                continue
-            png = hits[0]
+        png = pngs.get(ann.stem)
+        if png is None:
+            report["skipped"]["missing_png"] += 1
+            continue
         _place(png, out / "images" / split / png.name, copy)
         lbl = out / "labels" / split / f"{ann.stem}.txt"
         lbl.parent.mkdir(parents=True, exist_ok=True)

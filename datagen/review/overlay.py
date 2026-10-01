@@ -17,6 +17,7 @@ import cv2
 import numpy as np
 
 from ..common.classes import class_names
+from ..common.imageio import imread, imwrite, index_pngs
 from ..sam_masks.pipeline import load_ann
 
 
@@ -55,6 +56,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     n = 0
+    pngs = index_pngs(args.raw)
     for p in sorted(args.ann.glob("*.json")):
         if p.name.startswith("_"):
             continue
@@ -62,10 +64,10 @@ def main(argv=None):
         if h / 2**64 >= args.fraction:
             continue
         ann = load_ann(p)
-        hits = list(args.raw.rglob(f"{ann.stem}.png"))
-        if not hits:
+        png = pngs.get(ann.stem)
+        if png is None:
             continue
-        cv2.imwrite(str(args.out / f"{ann.stem}.png"), render(cv2.imread(str(hits[0])), ann))
+        imwrite(args.out / f"{ann.stem}.png", render(imread(png), ann))
         n += 1
     print(f"검수 이미지 {n}장 → {args.out}")
 

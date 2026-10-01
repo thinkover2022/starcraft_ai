@@ -13,11 +13,11 @@ import json
 from collections import Counter
 from pathlib import Path
 
-import cv2
 import numpy as np
 
 from ..common.config import load_config
 from ..common.frame import iter_frames
+from ..common.imageio import imread_rgb
 from .pipeline import process_frame
 
 
@@ -56,7 +56,7 @@ def main(argv=None):
         dst = out / f"{frame.stem}.json"
         if args.skip_existing and dst.exists():
             continue
-        img = cv2.cvtColor(cv2.imread(str(png)), cv2.COLOR_BGR2RGB)
+        img = imread_rgb(png)
         ann = process_frame(img, frame, seg, cfg.mask)
         dst.write_text(ann.to_json(), encoding="utf-8")
         stats["frames"] += 1

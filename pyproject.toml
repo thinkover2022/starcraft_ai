@@ -10,8 +10,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# 마스크 생성 (우분투 + 그래픽 카드)
-sam = ["torch>=2.3", "sam2"]
+# 마스크 생성. torch 는 CUDA 판을 먼저 설치하고, sam2 는 깃허브에서 설치한다 (docs/stage1_runbook.md)
+sam = ["torch>=2.3", "huggingface_hub"]
 # 객체 인식 모델 학습·평가·변환
 train = ["torch>=2.3", "ultralytics>=8.3"]
 # 윈도우 화면 캡처

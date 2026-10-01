@@ -69,8 +69,10 @@ def play_area_mask(shape: tuple[int, int], cfg: MaskConfig) -> np.ndarray | None
     h, w = shape
     if cfg.console_mask_png:
         import cv2
-        m = cv2.imread(cfg.console_mask_png, cv2.IMREAD_GRAYSCALE)
-        if m is None or m.shape != (h, w):
+
+        from .imageio import imread
+        m = imread(cfg.console_mask_png, cv2.IMREAD_GRAYSCALE)
+        if m.shape != (h, w):
             raise ValueError(f"조작판 마스크 {cfg.console_mask_png} 크기가 화면({w}x{h})과 다름")
         return m > 127
     if cfg.play_area_bottom is not None:

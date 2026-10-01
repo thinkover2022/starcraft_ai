@@ -1,7 +1,7 @@
 """평가 세트 ②–⑤ 일괄 평가 (문서 1.6절, 1.1절 완료 기준).
 
     python -m perception.detect.evaluate --weights runs/terran/s640/weights/best.pt \
-        --dataset /data/sc_terran_v1 --imgsz 640 --out runs/terran/s640/eval.json
+        --dataset D:/sc_data/sc_terran_v1 --imgsz 640 --out runs/terran/s640/eval.json
 
 데이터셋 폴더의 sc_terran_{test,unseen_maps,live,gold}.yaml 중 있는 것을 모두 평가한다.
 지표: 박스·마스크 평균 정밀도 평균(IoU 0.5, IoU 0.5–0.95), 클래스별 박스 IoU 0.5 평균 정밀도,

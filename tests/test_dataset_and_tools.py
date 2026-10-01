@@ -2,13 +2,13 @@ import json
 import sys
 from pathlib import Path
 
-import cv2
 import numpy as np
 import yaml
 
 from datagen.build_dataset.build import build, repeat_factors
 from datagen.build_dataset.split import assign_split
 from datagen.common.config import DatagenConfig, MaskConfig, SplitConfig
+from datagen.common.imageio import imread, imwrite
 from datagen.replay_filter.filter_replays import _parse, accept
 from datagen.review.overlay import render
 from datagen.sam_masks.pipeline import process_frame
@@ -42,7 +42,7 @@ def _make_raw_and_ann(tmp_path, n_replays=30):
         fr = frame([unit(1, "Terran_SCV", 1100, 2100), unit(2, "Terran_Marine", 1200, 2150)],
                    replay_id=f"r{r:08x}")
         img = draw(fr)
-        cv2.imwrite(str(raw / f"{fr.stem}.png"), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        imwrite(raw / f"{fr.stem}.png", img[:, :, ::-1])
         ann = process_frame(img, fr, BlobSegmenter(), MaskConfig())
         (ann_dir / f"{fr.stem}.json").write_text(ann.to_json())
     return raw, ann_dir
@@ -70,7 +70,7 @@ def test_review_render(tmp_path):
     raw, ann_dir = _make_raw_and_ann(tmp_path, 1)
     from datagen.sam_masks.pipeline import load_ann
     ann = load_ann(next(ann_dir.glob("*.json")))
-    img = cv2.imread(str(next(raw.glob("*.png"))))
+    img = imread(next(raw.glob("*.png")))
     out = render(img, ann)
     assert out.shape == (960, 2560, 3)
 
@@ -133,3 +133,13 @@ def test_train_config_resolution():
     assert cfg["model"] == "yolo11m-seg.pt" and cfg["imgsz"] == 1280 and cfg["name"] == "m1280"
     assert cfg["epochs"] == 5 and cfg["data"] == "/tmp/x.yaml"
     assert cfg["hsv_h"] == 0.0 and cfg["fliplr"] == 0.0
+
+
+def test_imageio_handles_non_ascii_path(tmp_path):
+    from datagen.common.imageio import index_pngs
+    d = tmp_path / "스타데이터"
+    d.mkdir()
+    img = np.zeros((4, 6, 3), np.uint8); img[1, 2] = (10, 20, 30)
+    imwrite(d / "화면.png", img)
+    assert (imread(d / "화면.png") == img).all()
+    assert index_pngs(tmp_path) == {"화면": d / "화면.png"}

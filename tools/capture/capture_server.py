@@ -21,11 +21,13 @@ import time
 from ctypes import wintypes
 from pathlib import Path
 
-import cv2
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # 저장소 루트 (datagen 패키지)
 import sync_block as sb  # noqa: E402
+
+from datagen.common.imageio import imwrite  # noqa: E402  한글 경로에서도 저장되는 함수
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -187,7 +189,8 @@ def main(argv=None):
             img = grabber.grab()
             if img.shape[:2] != (exp_h, exp_w):
                 print(f"[경고] 캡처 크기 {img.shape[1]}x{img.shape[0]} ≠ {args.size} — 창 모드/확대 설정 확인")
-            elif cv2.imwrite(str(args.out / f"{stem}.png"), img):
+            else:
+                imwrite(args.out / f"{stem}.png", img)
                 status = sb.STATUS_OK
                 n += 1
         except Exception as e:  # 실패해도 서버는 계속 돈다. 모듈은 이 화면을 건너뛴다.

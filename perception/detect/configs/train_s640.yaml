@@ -1,7 +1,7 @@
 # 기본 실험 (문서 1.7절 실험 2): 소형 분할 모델, 입력 640
 # 다른 실험은 model / imgsz / batch / name 만 바꾼 파일을 추가한다 (experiments.yaml 참조).
 model: yolo11s-seg.pt          # 공통 객체 문맥 데이터셋(COCO)으로 사전 학습된 가중치
-data: /data/sc_terran_v1/sc_terran.yaml
+data: D:/sc_data/sc_terran_v1/sc_terran.yaml   # build_dataset 이 만든 파일. --set data=... 로 바꿀 수 있음
 project: runs/terran
 name: s640
 
@@ -9,7 +9,7 @@ imgsz: 640
 epochs: 150
 batch: 32
 device: 0
-workers: 8
+workers: 4                     # 윈도우는 작업자 프로세스 시작 비용이 커서 4 정도가 적당
 patience: 30                   # 검증 성능이 30회 연속 안 오르면 조기 종료
 seed: 0
 

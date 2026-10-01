@@ -1,4 +1,4 @@
-"""실행용 엔진 변환 (문서 1.7절). 반드시 실행할 윈도우 컴퓨터(RTX 3090)에서 돌린다.
+"""실행용 엔진 변환 (문서 1.7절). 학습·실행과 같은 윈도우 컴퓨터(RTX 3090)에서 돌린다.
 
     python -m perception.detect.export --weights best.pt --imgsz 640 --format engine
     python -m perception.detect.export --weights best.pt --format onnx      # 대안
