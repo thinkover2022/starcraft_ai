@@ -18,8 +18,26 @@
 | 소유자 판정 (1.8절) | `perception/detect/owner.py` |
 | 학습 / 평가 / 엔진 변환 (1.7절) | `perception/detect/train.py`, `evaluate.py`, `export.py` |
 | 공통 (클래스 41개, 프레임 기록 형식, 설정, 좌표, 이미지 입출력) | `datagen/common/` |
-| 단계 실행 스크립트 | `tools/stage1.ps1` |
+| 단계 실행 스크립트 | `tools/stage1.ps1` (PowerShell. 명령 프롬프트에서도 호출 가능) |
 | 설정 | `configs/datagen.yaml`, `perception/detect/configs/` |
+
+## PowerShell 과 명령 프롬프트(cmd)
+
+모든 명령을 **PowerShell** 과 **명령 프롬프트(cmd.exe)** 두 가지로 적었습니다. 하나만 골라 쓰면 됩니다.
+두 셸의 차이 중 이 문서에 나오는 것은 아래뿐입니다.
+
+| 할 일 | PowerShell | 명령 프롬프트 |
+|---|---|---|
+| 가상환경 켜기 | `.\.venv\Scripts\Activate.ps1` | `.venv\Scripts\activate.bat` |
+| 환경 변수 설정 (그 창에서만 유효) | `$env:PYTHONUTF8 = "1"` | `set PYTHONUTF8=1` (`=` 양옆에 공백 없이) |
+| 긴 명령 줄 바꿈 | 줄 끝에 `` ` `` (백틱) | 줄 끝에 `^` |
+| 파일 복사 | `Copy-Item 원본 대상` | `copy 원본 대상` |
+| 파일 내용 보기 | `Get-Content 파일` | `type 파일` |
+| 단계 실행 스크립트 | `.\tools\stage1.ps1 -Step masks ...` | `powershell -ExecutionPolicy Bypass -File tools\stage1.ps1 -Step masks ...` 또는 아래의 `python -m ...` 직접 실행 |
+
+- 명령 프롬프트를 쓸 때는 창을 열 때마다 `set PYTHONUTF8=1` 을 먼저 실행합니다(한글 출력·파일 이름을 UTF-8로 처리).
+  PowerShell 용 `tools\stage1.ps1` 은 이 설정을 스스로 합니다.
+- 명령 프롬프트에서 한글이 깨져 보이면 `chcp 65001` 을 실행합니다.
 
 ## 0. 설치 (한 번)
 
@@ -31,7 +49,9 @@
 - 스타크래프트 1.16.1, BWAPI 4.4.0, Chaoslauncher, 창 모드 실행 도구(창 모드 플러그인 또는 DirectDraw 대체 래퍼)
 - screp 윈도우 실행 파일 (https://github.com/icza/screp 릴리스) — PATH에 추가
 
-### Python 환경 (PowerShell, 저장소 폴더에서)
+### Python 환경 (저장소 폴더에서)
+
+PowerShell:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -44,6 +64,22 @@ pip install -e ".[dev,train,capture,sam]"
 $env:SAM2_BUILD_CUDA = "0"
 pip install "git+https://github.com/facebookresearch/sam2.git"
 # 4) 확인
+python -m pytest
+```
+
+명령 프롬프트:
+```bat
+python -m venv .venv
+.venv\Scripts\activate.bat
+:: 1) PyTorch CUDA 판 — 반드시 먼저. 명령은 https://pytorch.org 의 설치 선택기(Windows / Pip / CUDA)에서 복사
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+python -c "import torch; print(torch.cuda.is_available())"
+:: 2) 이 저장소 + 학습·캡처 도구
+pip install -e ".[dev,train,capture,sam]"
+:: 3) 범용 분할 모델 2 — 윈도우에서는 선택형 CUDA 확장을 빌드하지 않고 설치
+set SAM2_BUILD_CUDA=0
+pip install "git+https://github.com/facebookresearch/sam2.git"
+:: 4) 확인
 python -m pytest
 ```
 - `SAM2_BUILD_CUDA=0`: SAM 2의 CUDA 확장은 마스크의 작은 구멍을 메우는 후처리에만 쓰여, 없어도 사각형 힌트 분할은 같게 동작합니다.
@@ -63,7 +99,8 @@ D:\sc_data\
 
 ## 1. 리플레이 걸러내기
 
-```powershell
+PowerShell, 명령 프롬프트 모두 같은 명령입니다.
+```bat
 python -m datagen.replay_filter.filter_replays --replays D:\replays --out D:\sc_data\tvt_list.txt
 ```
 통과한 리플레이를 `C:\StarCraft\maps\replays\tvt\` 로 복사합니다. 출력된 맵 목록에서 평가 세트 ③용 맵 3종을 골라
@@ -71,11 +108,18 @@ python -m datagen.replay_filter.filter_replays --replays D:\replays --out D:\sc_
 
 ## 2. 라벨 수집 모듈 빌드
 
-"x86 Native Tools Command Prompt for VS 2022" 또는 PowerShell 에서:
+PowerShell:
 ```powershell
 cmake -S tools\label_collector -B build\label_collector -A Win32 -DBWAPI_DIR=C:\BWAPI
 cmake --build build\label_collector --config Release
 Copy-Item build\label_collector\Release\LabelCollector.dll C:\StarCraft\bwapi-data\AI\
+```
+
+명령 프롬프트 (시작 메뉴의 "x86 Native Tools Command Prompt for VS 2022" 를 쓰면 컴파일러 경로가 잡혀 있어 편합니다):
+```bat
+cmake -S tools\label_collector -B build\label_collector -A Win32 -DBWAPI_DIR=C:\BWAPI
+cmake --build build\label_collector --config Release
+copy build\label_collector\Release\LabelCollector.dll C:\StarCraft\bwapi-data\AI\
 ```
 `C:\StarCraft\bwapi-data\bwapi.ini` 에서 `ai = bwapi-data\AI\LabelCollector.dll` 로 지정하고, 자동 메뉴 설정으로
 리플레이 폴더를 차례로 재생하게 합니다(`auto_menu`, `map = maps\replays\tvt\*.rep` 등 — 설치한 BWAPI 버전의 bwapi.ini 주석 참고).
@@ -83,8 +127,8 @@ Copy-Item build\label_collector\Release\LabelCollector.dll C:\StarCraft\bwapi-da
 
 ## 3. 데이터 수집
 
-PowerShell 창 1:
-```powershell
+PowerShell 또는 명령 프롬프트 창 하나를 열어 캡처 프로그램을 실행해 둡니다(두 셸 모두 같은 명령):
+```bat
 python tools\capture\capture_server.py --out D:\sc_data\raw\pilot --interval 12 --settle 2
 ```
 그다음 Chaoslauncher 로 BWAPI 를 주입해 게임을 실행합니다.
@@ -97,12 +141,21 @@ python tools\capture\capture_server.py --out D:\sc_data\raw\pilot --interval 12 
 
 ## 4. 시범 데이터로 측정할 것 (리플레이 20개)
 
+PowerShell:
 ```powershell
 .\tools\stage1.ps1 -Step masks  -Raw D:\sc_data\raw\pilot -Ann D:\sc_data\ann\pilot
 .\tools\stage1.ps1 -Step lag    -Raw D:\sc_data\raw\pilot -Ann D:\sc_data\ann\pilot
 .\tools\stage1.ps1 -Step review -Raw D:\sc_data\raw\pilot -Ann D:\sc_data\ann\pilot
 ```
 (PowerShell 이 스크립트 실행을 막으면 한 번만 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`)
+
+명령 프롬프트:
+```bat
+set PYTHONUTF8=1
+python -m datagen.sam_masks.run --raw D:\sc_data\raw\pilot --out D:\sc_data\ann\pilot --config configs\datagen.yaml --skip-existing
+python -m datagen.sam_masks.lag_check --raw D:\sc_data\raw\pilot --ann D:\sc_data\ann\pilot
+python -m datagen.review.overlay --raw D:\sc_data\raw\pilot --ann D:\sc_data\ann\pilot --out D:\sc_data\ann\pilot\_review --fraction 0.05
+```
 
 1. **화면-상태 어긋남**: `lag` 결과의 `best_lag_frames` 를 이후 수집에서 `capture_server.py --lag` 로 넘깁니다(기록용).
    어긋남이 1 이상이면 라벨 수집 모듈이 `prev` 위치를 쓰도록 바꾸는 것을 검토합니다.
@@ -114,11 +167,22 @@ python tools\capture\capture_server.py --out D:\sc_data\raw\pilot --interval 12 
 
 ## 5. 대량 생산과 데이터셋 구성
 
+PowerShell:
 ```powershell
 .\tools\stage1.ps1 -Step masks -Raw D:\sc_data\raw -Ann D:\sc_data\ann
 .\tools\stage1.ps1 -Step build -Raw D:\sc_data\raw -Ann D:\sc_data\ann -Dataset D:\sc_data\sc_terran_v1
 Get-Content D:\sc_data\sc_terran_v1\report.json   # 세트별 화면 수, 클래스별 객체 수, 목표 미달 클래스
 ```
+
+명령 프롬프트:
+```bat
+set PYTHONUTF8=1
+python -m datagen.sam_masks.run --raw D:\sc_data\raw --out D:\sc_data\ann --config configs\datagen.yaml --skip-existing
+python -m datagen.build_dataset.build --raw D:\sc_data\raw --ann D:\sc_data\ann ^
+    --out D:\sc_data\sc_terran_v1 --config configs\datagen.yaml
+type D:\sc_data\sc_terran_v1\report.json
+```
+정밀 검수 세트가 있으면 build 명령 끝에 `--gold D:\sc_data\gold_ann` 을 붙입니다.
 - 데이터셋 이미지는 원본과 같은 드라이브면 하드 링크로 만들어 디스크를 아낍니다(다른 드라이브면 복사).
 - 실제 대전 캡처(평가 세트 ④)는 프레임 기록의 `source` 가 `"live"` 이면 자동으로 `live` 세트로 갑니다.
   (라벨 수집 모듈의 실제 대전 모드는 아직 구현 전 — 리플레이 모드만 지원)
@@ -126,18 +190,38 @@ Get-Content D:\sc_data\sc_terran_v1\report.json   # 세트별 화면 수, 클래
 
 ## 6. 소유자 색상표 보정과 평가
 
+PowerShell:
 ```powershell
 .\tools\stage1.ps1 -Step owner -Raw D:\sc_data\raw -Ann D:\sc_data\ann
+```
+
+명령 프롬프트:
+```bat
+set PYTHONUTF8=1
+python -m perception.detect.owner calibrate --raw D:\sc_data\raw --ann D:\sc_data\ann --out configs\team_palette.json
+python -m perception.detect.owner evaluate --raw D:\sc_data\raw --ann D:\sc_data\ann --palette configs\team_palette.json
 ```
 결과 색상표는 `configs\team_palette.json` 에 저장됩니다.
 
 ## 7. 학습·평가·변환
 
+PowerShell:
 ```powershell
 .\tools\stage1.ps1 -Step train  -Dataset D:\sc_data\sc_terran_v1 -Experiment s640
 .\tools\stage1.ps1 -Step eval   -Dataset D:\sc_data\sc_terran_v1 -Experiment s640
 .\tools\stage1.ps1 -Step export -Experiment s640
 ```
+
+명령 프롬프트:
+```bat
+set PYTHONUTF8=1
+python -m perception.detect.train --experiment s640 --set data=D:\sc_data\sc_terran_v1\sc_terran.yaml
+python -m perception.detect.evaluate --weights runs\terran\s640\weights\best.pt ^
+    --dataset D:\sc_data\sc_terran_v1 --imgsz 640 --out runs\terran\s640\eval.json
+python -m perception.detect.export --weights runs\terran\s640\weights\best.pt --imgsz 640 --format engine --bench
+```
+입력 크기 1280 실험(`n1280, s1280, m1280`)은 evaluate·export 의 `--imgsz` 를 1280 으로 바꿉니다
+(PowerShell 스크립트는 실험 이름을 보고 자동으로 정함).
 - 실험 이름: `n640, s640, m640, n1280, s1280, m1280` (`perception\detect\configs\experiments.yaml`).
 - 학습 중 그래픽 메모리 부족이 나면 `--set batch=16` 처럼 배치를 줄입니다 (`python -m perception.detect.train --experiment s640 --set batch=16 data=...`).
 - 윈도우에서 데이터 로더 오류(작업자 프로세스 관련)가 나면 `--set workers=0` 으로 확인합니다.
